@@ -1,10 +1,10 @@
 from fastapi import FastAPI, Request, UploadFile, File
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from pydantic import BaseModel
 from main import *
-from api_utils import validate_email, validate_password
 import os
 
 app = FastAPI()
@@ -19,11 +19,26 @@ class UserQuery(BaseModel):
     query: str = ""
 
 
+class UserCredentials(BaseModel):
+    email: str
+    username: str
+    password: str
+
+
 @app.get("/register")
 async def register_user(request: Request):
     return templates.TemplateResponse(
         request=request, name="register.html", context={}
     )
+
+
+@app.post("/register-user")
+async def register_user_with_mysql_db(user_creds: UserCredentials):
+    email = user_creds.email
+    username = user_creds.username
+    password = user_creds.password
+    mysql_register_user(email, username, password)
+    return RedirectResponse(url="/chatbot", status_code=302)
 
 
 @app.get("/")

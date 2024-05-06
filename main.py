@@ -9,11 +9,12 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_community.chat_message_histories.upstash_redis import UpstashRedisChatMessageHistory
 
+import MySQLdb as mdb
+from google.cloud import storage
+
 import os
 import yaml
 from pathlib import Path
-
-from google.cloud import storage
 
 cfg = yaml.safe_load(open("secrets/secrets.yaml", "r"))
 
@@ -30,6 +31,15 @@ storage_client = storage.Client.from_service_account_json("secrets/profound-saga
 BUCKET_NAME = "study-app-test"
 CHROMA_PERSIST = "chroma_db"
 AGENT_EXEC = "agent_executor"
+
+
+def mysql_register_user(email, username, password):
+    conn = mdb.connect(cfg["MYSQL_SERVER"], cfg["MYSQL_USERNAME"], cfg["MYSQL_PASSWORD"], "study-app-users")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO user_credentials (email, username, password) VALUES (%s, %s, %s)",
+                   (email, username, password))
+    conn.commit()
+    conn.close()
 
 
 def upload_chroma_db(bucket):
@@ -161,5 +171,4 @@ def get_agent_executor_and_respond(query, user_bucket=BUCKET_NAME):
 
 
 if __name__ == "__main__":
-    response = get_agent_executor_and_respond("What are Dan Holtby's hobbies?")
-    print(response)
+    pass
