@@ -1,0 +1,9 @@
+fastapi==0.110.2
+google-cloud-storage==2.16.0
+langchain==0.1.16
+langchain_community==0.0.34
+langchain_core==0.1.46
+langchain_openai==0.1.4
+protobuf==4.25.3
+pydantic==2.7.1
+PyYAML==6.0.1

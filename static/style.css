@@ -1,0 +1,26 @@
+* {
+font-family: 'Helvetica', 'Arial', sans-serif;
+background-color: white;
+color: black;
+}
+
+.query-container {
+  margin-top: 30%;
+  height: 200px;
+  position: relative;
+}
+
+.chatbot-query {
+  margin: 0;
+  position: absolute;
+  top: 50%;
+  -ms-transform: translateX(50%) translateY(-50%);
+  transform: translateX(50%) translateY(-50%);
+  right: 50%;
+}
+
+#query {
+    width: 100%;
+    resize: none;
+}
+

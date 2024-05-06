@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chatbot</title>
+    <link href="{{ url_for('static', path='/style.css') }}" rel="stylesheet">
+</head>
+<body>
+<ul id="chat"></ul>
+<div class="file-upload-container">
+    <form onsubmit="return validateFileUpload()" method="post" enctype="multipart/form-data">
+        <input type="file" id="file-upload" name="file-upload">
+        <input type="submit">
+    </form>
+</div>
+<div class="query-container">
+    <div class="chatbot-query">
+        User:
+        <form action="/chatbot">
+            <textarea id="query" name="query" cols="100" rows="10"></textarea>
+        </form>
+    </div>
+</div>
+</body>
+</html>
+
+<script src="static/chatbot-script.js" defer></script>
