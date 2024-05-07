@@ -8,3 +8,7 @@ To deploy Google Cloud Functions, do:
 `cd google-cloud`
 
 `./gcf_deploy.sh ../main.py gcf_config.txt`
+
+To run the app, do:
+
+`uvicorn api:app --reload`
