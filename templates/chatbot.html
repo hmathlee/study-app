@@ -9,6 +9,16 @@
 <nav>
     <a href="/chatbot">Chatbot</a>
     <a href="/register">Register</a>
+    {% if username %}
+        <a href="/user/{{ username }}">Profile</a>
+    {% else %}
+        <a href="/login">Profile</a>
+    {% endif %}
+    {% if username %}
+        <a href="#" onclick="userLogout()" id="logout">Logout</a>
+    {% else %}
+        <a href="/login">Login</a>
+    {% endif %}
 </nav>
 <ul id="chat"></ul>
 <div class="file-upload-container">
@@ -29,3 +39,6 @@
 </html>
 
 <script src="static/chatbot-script.js" defer></script>
+{% if username %}
+    <script src="static/user-logout.js" defer></script>
+{% endif %}

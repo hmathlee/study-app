@@ -1,11 +1,13 @@
 from fastapi import FastAPI, Request, UploadFile, File
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from pydantic import BaseModel
+import base64
+
 from main import *
-import os
+from api_utils import *
 
 app = FastAPI()
 
@@ -21,8 +23,15 @@ class UserQuery(BaseModel):
 
 class UserCredentials(BaseModel):
     email: str
-    username: str
-    password: str
+    username: str = ""
+    password: str = ""
+
+
+@app.get("/")
+async def index(request: Request):
+    return templates.TemplateResponse(
+        request=request, name="home.html", context={}
+    )
 
 
 @app.get("/register")
@@ -37,22 +46,55 @@ async def register_user_with_mysql_db(user_creds: UserCredentials):
     email = user_creds.email
     username = user_creds.username
     password = user_creds.password
-    mysql_register_user(email, username, password)
-    return RedirectResponse(url="/chatbot", status_code=302)
+    return mysql_register_user(email, username, password)
 
 
-@app.get("/")
-async def index(request: Request):
+@app.get("/login")
+async def login(request: Request):
     return templates.TemplateResponse(
-        request=request, name="home.html", context={}
+        request=request, name="login.html", context={}
     )
+
+
+@app.post("/verify-login")
+async def user_login(user_creds: UserCredentials):
+    email = user_creds.email
+    password = user_creds.password
+    response = validate_user_login(email, password)
+    json_response = JSONResponse(content=response)
+
+    if "username" in response:
+        # Generate session ID
+        session_id_bytes = os.urandom(16)
+        session_id = base64.urlsafe_b64encode(session_id_bytes).decode("utf-8")
+        json_response.set_cookie("session_id", session_id, max_age=60)
+        insert_session_id(session_id, response["username"])
+
+    return json_response
+
+
+@app.get("/user/{username}")
+async def user_profile(request: Request):
+    username = get_username_from_request_cookies(request)
+    if username:
+        return templates.TemplateResponse(
+            request=request, name="profile.html", context={"username": username}
+        )
+    else:
+        return login(request)
+
+
+@app.get("/logout")
+async def logout(request: Request):
+    remove_session_id(request)
 
 
 @app.get("/chatbot")
 async def chatbot_page(request: Request):
     upload_user_files_and_db_to_google_cloud([])
+    username = get_username_from_request_cookies(request)
     return templates.TemplateResponse(
-        request=request, name="chatbot.html", context={}
+        request=request, name="chatbot.html", context={"username": username}
     )
 
 

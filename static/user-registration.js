@@ -1,10 +1,12 @@
 const title = document.querySelector("title");
 const header = document.querySelector("h1");
 const inputElement = document.querySelector("input");
-const form = document.querySelector("form");
-form.addEventListener("submit", validateUserInfo);
+const registrationErrorMsg = document.getElementById("reg-err");
+const registrationForm = document.getElementById("reg-form");
+registrationForm.addEventListener("submit", validateUserInfo);
 
 const userInfo = {};
+registrationErrorMsg.style.color = "red";
 
 function validateUserInfo(event) {
     event.preventDefault();
@@ -17,12 +19,16 @@ function validateUserInfo(event) {
             userInfo.username = userInput;
             title.innerHTML = "Password";
             header.innerHTML = "Password";
+
+            // Hide the password for security
+            inputElement.type = "password";
             break;
 
         // password
         case("Password"):
             // at least 8 characters, with at least one letter/number
             if (userInput.length < 8) {
+                registrationErrorMsg.innerHTML = "Your password must be at least 8 characters long."
                 return false;
             }
 
@@ -39,6 +45,7 @@ function validateUserInfo(event) {
             }
 
             if (letters == 0 || numbers == 0) {
+                registrationErrorMsg.innerHTML = "Your password must include at least one letter and at least one number.";
                 return false;
             }
 
@@ -53,27 +60,47 @@ function validateUserInfo(event) {
             })
             .then(response => response.json())
             .then(data => {
-                alert(JSON.stringify(data));
+                if (data.status == "OK") {
+                    window.location.href = "/chatbot";
+                }
+                else {
+                    registrationErrorMsg.innerHTML = data.status;
+                }
             })
             .catch(error => {
                 alert(error);
             })
-
-            form.submit();
-            window.location.href = "/chatbot";
-
             break;
 
         // email
         default:
             // modify later
             if (!userInput.includes("@")) {
-                return false;
+                registrationErrorMsg.innerHTML = "Please input a valid email address.";
             }
-
-            userInfo.email = userInput;
-            title.innerHTML = "Username";
-            header.innerHTML = "Username";
+            else {
+                userInfo.email = userInput;
+                fetch("/register-user", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(userInfo)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status == "OK") {
+                        title.innerHTML = "Username";
+                        header.innerHTML = "Username";
+                    }
+                    else {
+                        registrationErrorMsg.innerHTML = data.status;
+                    }
+                })
+                .catch(error => {
+                    alert(error);
+                })
+            }
             break;
     }
 

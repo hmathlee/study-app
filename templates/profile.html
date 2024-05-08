@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Profile</title>
+</head>
+<body>
+<nav>
+    <a href="/chatbot">Chatbot</a>
+    <a href="/register">Register</a>
+    <a href="/user/{{ username }}">Profile</a>
+    <a href="#" onclick="userLogout()" id="logout">Logout</a>
+    <link href="{{ url_for('static', path='/style.css') }}" rel="stylesheet">
+</nav>
+<h1>Hi there, {{ username }}!</h1>
+</body>
+</html>
+
+<script src="static/user-logout.js" defer></script>

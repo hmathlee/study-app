@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <link href="{{ url_for('static', path='/style.css') }}" rel="stylesheet">
+</head>
+<body>
+<nav>
+    <a href="/chatbot">Chatbot</a>
+    <a href="/register">Register</a>
+</nav>
+<form onsubmit="return validateLogin()" id="login-form">
+    <label for="login-email">Email:</label><br>
+    <input type="text" id="login-email" placeholder="example@yourschool.com"><br>
+    <label for="login-password">Password:</label><br>
+    <input type="password" id="login-password"><br>
+    <input type="submit" value="Login">
+</form>
+<p id="login-err"></p>
+</body>
+</html>
+
+<script src="static/user-login.js" defer></script>
