@@ -49,31 +49,41 @@ def mysql_register_user(email, username, password):
 def validate_user_login(email, password):
     cursor = get_cursor()
     cursor.execute("SELECT * FROM user_credentials WHERE email=%s AND password=%s", (email, password))
-    username = get_column_value_from_cursor(cursor, "username")
-    if username:
+    user_id = get_column_value_from_cursor(cursor, "id")
+    if user_id:
         return {
             "status": "OK",
-            "username": username
+            "user_id": user_id
         }
     return {"status": "Invalid email or password"}
 
 
-def insert_session_id(session_id, username):
+def insert_session_id(session_id, user_id):
     cursor, conn = get_cursor(return_connection=True)
     cursor.execute("SELECT * FROM user_sessions where session_id=%s", (session_id, ))
-    username_check = get_column_value_from_cursor(cursor, "username")
-    if username_check is None:
-        cursor.execute("INSERT INTO user_sessions (session_id, username) VALUES (%s, %s)", (session_id, username))
+    user_id_check = get_column_value_from_cursor(cursor, "user_id")
+    if user_id_check is None:
+        cursor.execute("INSERT INTO user_sessions (session_id, user_id) VALUES (%s, %s)", (session_id, user_id))
 
     conn.commit()
     conn.close()
 
 
-def get_username_from_request_cookies(request: Request):
+def get_user_id_from_request_cookies(request: Request):
     if "session_id" in request.cookies:
         session_id = request.cookies.get("session_id")
         cursor = get_cursor()
-        cursor.execute("SELECT username FROM user_sessions WHERE session_id=%s", (session_id,))
+        cursor.execute("SELECT * FROM user_sessions WHERE session_id=%s", (session_id,))
+        return get_column_value_from_cursor(cursor, "user_id")
+    else:
+        return None
+
+
+def get_username_from_request_cookies(request: Request):
+    user_id = get_user_id_from_request_cookies(request)
+    if user_id:
+        cursor = get_cursor()
+        cursor.execute("SELECT * FROM user_credentials where id=%s", (user_id, ))
         return get_column_value_from_cursor(cursor, "username")
     else:
         return None
@@ -93,3 +103,7 @@ def remove_session_id(request: Request):
 
         conn.commit()
         conn.close()
+
+
+if __name__ == "__main__":
+    pass

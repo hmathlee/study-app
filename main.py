@@ -49,8 +49,11 @@ def get_all_path_strs(root):
 
 
 def upload_user_files_and_db_to_google_cloud(filepaths, user_bucket=BUCKET_NAME):
-    # Get blobs from bucket
-    bucket = storage_client.get_bucket(user_bucket)
+    # Get blobs from bucket; create the bucket if it doesn't exist
+    bucket = storage_client.bucket(user_bucket)
+    if not bucket.exists():
+        bucket.create()
+
     blobs = bucket.list_blobs()
     blob_names = [blob.name for blob in blobs]
 

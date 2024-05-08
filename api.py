@@ -63,12 +63,12 @@ async def user_login(user_creds: UserCredentials):
     response = validate_user_login(email, password)
     json_response = JSONResponse(content=response)
 
-    if "username" in response:
+    if "user_id" in response:
         # Generate session ID
         session_id_bytes = os.urandom(16)
         session_id = base64.urlsafe_b64encode(session_id_bytes).decode("utf-8")
-        json_response.set_cookie("session_id", session_id, max_age=60)
-        insert_session_id(session_id, response["username"])
+        json_response.set_cookie("session_id", session_id)
+        insert_session_id(session_id, response["user_id"])
 
     return json_response
 
@@ -109,13 +109,20 @@ async def send_response(user_query: UserQuery):
 
 
 @app.post("/upload-files")
-async def upload_file(payload: UploadFile = File(...)):
+async def upload_file(request: Request, payload: UploadFile = File(...)):
     content = await payload.read()
     filename = payload.filename
-    fp = os.path.join(TEMP_DIR, filename)
 
-    if not os.path.exists(TEMP_DIR):
-        os.makedirs(TEMP_DIR)
+    # Set up a temporary directory for user (temp if not logged in)
+    user_id = get_user_id_from_request_cookies(request)
+    if user_id:
+        temp_data_dir = TEMP_DIR + "_user_" + user_id
+    else:
+        temp_data_dir = TEMP_DIR + "_user_temp"
+
+    fp = os.path.join(temp_data_dir, filename)
+    if not os.path.exists(temp_data_dir):
+        os.makedirs(temp_data_dir)
 
     with open(fp, "wb") as f:
         f.write(content)
@@ -127,9 +134,16 @@ async def upload_file(payload: UploadFile = File(...)):
 
 
 @app.post("/upload-to-google-cloud")
-async def upload_files_and_db_to_google_cloud():
-    fnames = os.listdir(TEMP_DIR)
-    fps = [os.path.join(TEMP_DIR, fname) for fname in fnames]
-    upload_user_files_and_db_to_google_cloud(fps)
+async def upload_files_and_db_to_google_cloud(request: Request):
+    user_id = get_user_id_from_request_cookies(request)
+    if user_id:
+        user_id = "user_" + user_id
+    else:
+        user_id = "user_temp"
+
+    temp_data_dir = TEMP_DIR + "_" + user_id
+    fnames = os.listdir(temp_data_dir)
+    fps = [os.path.join(temp_data_dir, fname) for fname in fnames]
+    upload_user_files_and_db_to_google_cloud(fps, user_id)
 
     return {"status": "Uploaded files and DB to Google Cloud successfully"}

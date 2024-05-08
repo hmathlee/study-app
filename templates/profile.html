@@ -3,15 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <title>Profile</title>
+    <link href="{{ url_for('static', path='/style.css') }}" rel="stylesheet">
 </head>
 <body>
-<nav>
-    <a href="/chatbot">Chatbot</a>
-    <a href="/register">Register</a>
-    <a href="/user/{{ username }}">Profile</a>
-    <a href="#" onclick="userLogout()" id="logout">Logout</a>
-    <link href="{{ url_for('static', path='/style.css') }}" rel="stylesheet">
-</nav>
+<ul class="navbar">
+    <li><a href="/chatbot">Chatbot</a></li>
+    <li><a href="/register">Register</a></li>
+    <li>
+        {% if username %}
+            <a href="/user/{{ username }}">Profile</a>
+        {% else %}
+            <a href="/login">Profile</a>
+        {% endif %}
+    </li>
+    <li>
+        {% if username %}
+            <a href="#" onclick="userLogout()" id="logout">Logout</a>
+        {% else %}
+            <a href="/login">Login</a>
+        {% endif %}
+    </li>
+</ul>
 <h1>Hi there, {{ username }}!</h1>
 </body>
 </html>

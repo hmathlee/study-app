@@ -1,8 +1,31 @@
 * {
 font-family: 'Helvetica', 'Arial', sans-serif;
-background-color: white;
 color: black;
 }
+
+.navbar {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #db854f;
+}
+
+.navbar li {
+    float: left;
+}
+
+.navbar li a {
+    display: block;
+    text-decoration: none;
+    text-align: center;
+    padding: 14px 16px;
+}
+
+.navbar li a:hover {
+    background-color: #edae87;
+}
+
 
 .query-container {
   margin-top: 30%;

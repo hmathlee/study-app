@@ -6,20 +6,24 @@
     <link href="{{ url_for('static', path='/style.css') }}" rel="stylesheet">
 </head>
 <body>
-<nav>
-    <a href="/chatbot">Chatbot</a>
-    <a href="/register">Register</a>
-    {% if username %}
-        <a href="/user/{{ username }}">Profile</a>
-    {% else %}
-        <a href="/login">Profile</a>
-    {% endif %}
-    {% if username %}
-        <a href="#" onclick="userLogout()" id="logout">Logout</a>
-    {% else %}
-        <a href="/login">Login</a>
-    {% endif %}
-</nav>
+<ul class="navbar">
+    <li><a href="/chatbot">Chatbot</a></li>
+    <li><a href="/register">Register</a></li>
+    <li>
+        {% if username %}
+            <a href="/user/{{ username }}">Profile</a>
+        {% else %}
+            <a href="/login">Profile</a>
+        {% endif %}
+    </li>
+    <li>
+        {% if username %}
+            <a href="#" onclick="userLogout()" id="logout">Logout</a>
+        {% else %}
+            <a href="/login">Login</a>
+        {% endif %}
+    </li>
+</ul>
 <ul id="chat"></ul>
 <div class="file-upload-container">
     <form onsubmit="return validateFileUpload()" method="post" enctype="multipart/form-data">
