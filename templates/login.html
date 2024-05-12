@@ -6,10 +6,18 @@
     <link href="{{ url_for('static', path='/style.css') }}" rel="stylesheet">
 </head>
 <body>
-<ul class="navbar">
-    <li><a href="/chatbot">Chatbot</a></li>
-    <li><a href="/register">Register</a></li>
-</ul>
+<!-- Toggle navbar -->
+<button class="navbar-button" onclick="moveNavbar()">
+    <img src="../images/nav_icon.jpg">
+</button>
+
+<div class="navbar">
+    <ul class="navbar">
+        <li><a href="/chatbot">Chatbot</a></li>
+        <li><a href="/register">Register</a></li>
+    </ul>
+</div>
+
 <form onsubmit="return validateLogin()" id="login-form">
     <label for="login-email">Email:</label><br>
     <input type="text" id="login-email" placeholder="example@yourschool.com"><br>
@@ -17,8 +25,12 @@
     <input type="password" id="login-password"><br>
     <input type="submit" value="Login">
 </form>
+
 <p id="login-err"></p>
 </body>
 </html>
 
 <script src="static/user-login.js" defer></script>
+
+<!-- Navbar menu -->
+<script src="static/navbar.js" defer></script>

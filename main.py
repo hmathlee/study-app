@@ -24,7 +24,7 @@ os.environ["TAVILY_API_KEY"] = cfg["TAVILY_API_KEY"]
 os.environ["ALLOW_RESET"] = "True"
 
 # Google auth
-storage_client = storage.Client.from_service_account_json("secrets/profound-saga-420500-0e972a75285b.json")
+storage_client = storage.Client.from_service_account_json("secrets/profound-saga-420500-b3f6a7d4835f.json")
 
 # Constants
 BUCKET_NAME = "study-app-test"
@@ -48,11 +48,22 @@ def get_all_path_strs(root):
     return res
 
 
+def remove_temp_bucket(temp_bucket):
+    buckets = storage_client.list_buckets()
+    buckets = [bucket.name for bucket in buckets]
+    if temp_bucket in buckets:
+        b = storage_client.get_bucket(temp_bucket)
+        b.delete()
+
+
 def upload_user_files_and_db_to_google_cloud(filepaths, user_bucket=BUCKET_NAME):
     # Get blobs from bucket; create the bucket if it doesn't exist
-    bucket = storage_client.bucket(user_bucket)
-    if not bucket.exists():
-        bucket.create()
+    buckets = storage_client.list_buckets()
+    buckets = [bucket.name for bucket in buckets]
+    if user_bucket not in buckets:
+        bucket = storage_client.create_bucket(user_bucket)
+    else:
+        bucket = storage_client.get_bucket(user_bucket)
 
     blobs = bucket.list_blobs()
     blob_names = [blob.name for blob in blobs]
@@ -97,22 +108,26 @@ def upload_user_files_and_db_to_google_cloud(filepaths, user_bucket=BUCKET_NAME)
         upload_chroma_db(bucket)
 
 
-def get_agent_executor_and_respond(query, user_bucket=BUCKET_NAME):
-    # If user bucket has a vector db, create a retriever. Otherwise, don't.
-    bucket = storage_client.get_bucket(user_bucket)
-    blobs = bucket.list_blobs()
-
+async def get_agent_executor_and_respond(query, user_bucket=BUCKET_NAME):
     if not os.path.exists(CHROMA_PERSIST):
         os.makedirs(CHROMA_PERSIST)
 
-    for blob in blobs:
-        if CHROMA_PERSIST in blob.name:
-            if "chroma.sqlite3" not in blob.name:
-                chroma_metadir = Path(blob.name).parent.absolute()
-                if not os.path.exists(chroma_metadir):
-                    os.makedirs(chroma_metadir)
-            b = bucket.get_blob(blob.name)
-            b.download_to_filename(blob.name)
+    # If user bucket has a vector db, create a retriever. Otherwise, don't.
+    buckets = storage_client.list_buckets()
+    buckets = [bucket.name for bucket in buckets]
+    if user_bucket not in buckets:
+        bucket = storage_client.create_bucket(user_bucket)
+    else:
+        bucket = storage_client.get_bucket(user_bucket)
+        blobs = bucket.list_blobs()
+        for blob in blobs:
+            if CHROMA_PERSIST in blob.name:
+                if "chroma.sqlite3" not in blob.name:
+                    chroma_metadir = Path(blob.name).parent.absolute()
+                    if not os.path.exists(chroma_metadir):
+                        os.makedirs(chroma_metadir)
+                b = bucket.get_blob(blob.name)
+                b.download_to_filename(blob.name)
 
     if len(os.listdir(CHROMA_PERSIST)) > 0:
         vector_db = Chroma(persist_directory=CHROMA_PERSIST, embedding_function=OpenAIEmbeddings())
@@ -120,8 +135,9 @@ def get_agent_executor_and_respond(query, user_bucket=BUCKET_NAME):
     else:
         retriever = None
 
+
     # Model
-    llm = ChatOpenAI(model="gpt-3.5-turbo-1106", temperature=0.7)
+    llm = ChatOpenAI(model="gpt-3.5-turbo-1106", temperature=0.7, streaming=True)
 
     # Prompt
     prompt = ChatPromptTemplate.from_messages([
@@ -144,10 +160,12 @@ def get_agent_executor_and_respond(query, user_bucket=BUCKET_NAME):
         tools = [retriever_tool, search]
 
     # Upstash Redis chat persistence
+    ttl = 60 if "temp" in user_bucket else -1
     history = UpstashRedisChatMessageHistory(
         url=cfg["UPSTASH_URL"],
         token=cfg["UPSTASH_TOKEN"],
-        session_id=user_bucket
+        session_id=user_bucket,
+        ttl=ttl
     )
 
     # Memory (include Redis history)
@@ -157,7 +175,7 @@ def get_agent_executor_and_respond(query, user_bucket=BUCKET_NAME):
     agent = create_openai_functions_agent(llm=llm, prompt=prompt, tools=tools)
     agent_executor = AgentExecutor(agent=agent, tools=tools, memory=memory)
 
-    response = agent_executor.invoke({"input": query})
+    response = await agent_executor.ainvoke({"input": query})
     upload_chroma_db(bucket)
 
     return response["output"]

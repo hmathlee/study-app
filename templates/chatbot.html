@@ -4,41 +4,72 @@
     <meta charset="UTF-8">
     <title>Chatbot</title>
     <link href="{{ url_for('static', path='/style.css') }}" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap"
+          rel="stylesheet">
 </head>
-<body>
-<ul class="navbar">
-    <li><a href="/chatbot">Chatbot</a></li>
-    <li><a href="/register">Register</a></li>
-    <li>
+
+<body onunload="unloadHandler()">
+<!-- Header to house the navbar and profile shortcut and icon -->
+<header>
+    <!-- Toggle navbar -->
+    <button class="navbar-button" onclick="moveNavbar()">
+        <img src="../images/nav_icon.jpg">
+    </button>
+
+    <!--  Shortcut to profile page  -->
+    <button class="profile-icon">
         {% if username %}
-            <a href="/user/{{ username }}">Profile</a>
+            <a href="/user/{{ username }}" style="text-decoration: none">Profile</a>
         {% else %}
-            <a href="/login">Profile</a>
+            <a href="/login" style="text-decoration: none">Profile</a>
         {% endif %}
-    </li>
-    <li>
-        {% if username %}
-            <a href="#" onclick="userLogout()" id="logout">Logout</a>
-        {% else %}
-            <a href="/login">Login</a>
-        {% endif %}
-    </li>
-</ul>
-<ul id="chat"></ul>
+    </button>
+</header>
+
+<h2>{{ username }}'s Chat</h2>
+
+<!-- Navigation menu -->
+<div class="navbar">
+    <ul>
+        <li><a href="/chatbot">Chatbot</a></li>
+        <li><a href="/register">Register</a></li>
+        <li>
+            {% if username %}
+                <a href="/user/{{ username }}">Profile</a>
+            {% else %}
+                <a href="/login">Profile</a>
+            {% endif %}
+        </li>
+        <li>
+            {% if username %}
+                <a href="#" onclick="userLogout()" id="logout">Logout</a>
+            {% else %}
+                <a href="/login">Login</a>
+            {% endif %}
+        </li>
+    </ul>
+</div>
+
+<!--Chat box-->
+<ul id="chat-box"></ul>
+
+<!-- File upload -->
 <div class="file-upload-container">
+    Upload your course notes here:
     <form onsubmit="return validateFileUpload()" method="post" enctype="multipart/form-data">
         <input type="file" id="file-upload" name="file-upload">
         <input type="submit">
     </form>
 </div>
-<div class="query-container">
-    <div class="chatbot-query">
-        User:
-        <form action="/chatbot">
-            <textarea id="query" name="query" cols="100" rows="10"></textarea>
-        </form>
-    </div>
+
+<!-- User query box -->
+<div class="chatbot-query">
+    <hr>
+    <form action="/chatbot">
+        <textarea id="query" name="query" cols="100" rows="10" placeholder="Type something..."></textarea>
+    </form>
 </div>
+
 </body>
 </html>
 
@@ -46,3 +77,6 @@
 {% if username %}
     <script src="static/user-logout.js" defer></script>
 {% endif %}
+
+<!-- Navbar menu -->
+<script src="static/navbar.js" defer></script>

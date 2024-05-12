@@ -8,11 +8,15 @@ function preventEnterDefault(e) {
     if (e.keyCode == 13) {
         e.preventDefault();
 
-        const chat = document.querySelector("ul");
+        const chat = document.querySelector("#chat-box");
         const userMessage = queryBox.value;
 
+        // Container is left-aligned for AI and right-aligned for user
+
+        // Text is always left-aligned
         const msgListElement = document.createElement("li");
         msgListElement.innerHTML = userMessage;
+        msgListElement.className = "user-msg";
 
         chat.appendChild(msgListElement);
         queryBox.value = "";
@@ -27,12 +31,14 @@ function preventEnterDefault(e) {
         .then(response => response.json())
         .then(data => {
             const GPTListElement = document.createElement("li");
-            GPTListElement.innerHTML = data.result;
+            GPTListElement.innerHTML = "AI: " + data.result;
+            GPTListElement.className = "ai-msg";
             chat.appendChild(GPTListElement);
         })
         .catch((error) => {
             alert("Oops, something went wrong!");
-        });
+        })
+        .finally(() => chat.scrollTo(0, chat.scrollHeight));
     }
 }
 
@@ -81,3 +87,10 @@ function validateFileUpload() {
 
     return false;
 }
+
+window.addEventListener("beforeunload", function(e) {
+    fetch("/logout", {method: "GET"})
+    .catch(error => {
+        alert(error);
+    });
+});

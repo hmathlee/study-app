@@ -1,18 +1,26 @@
 * {
-font-family: 'Helvetica', 'Arial', sans-serif;
+font-family: 'Raleway', 'Arial', sans-serif;
 color: black;
 }
 
-.navbar {
+.profile-icon {
+    float: right;
+}
+
+.navbar ul {
+    position: absolute;
     list-style-type: none;
     margin: 0;
     padding: 0;
     overflow: hidden;
     background-color: #db854f;
+    width: 0px;
+    transition: width 0.2s;
+    z-index: 1;
 }
 
-.navbar li {
-    float: left;
+.navbar ul li {
+    display: block;
 }
 
 .navbar li a {
@@ -26,23 +34,75 @@ color: black;
     background-color: #edae87;
 }
 
+.navbar:hover + .chat-and-upload {
+    background-color: #ccc;
+}
+
+.chat-and-upload {
+    transition: background-color 0.2s;
+}
+
+#chat-box {
+    position: absolute;
+    overflow-y: scroll;
+    width: 100%;
+    height: 65%;
+}
+
+#chat-box li {
+    list-style-type: none;
+    list-style-position: inside;
+    padding: 10px;
+}
+
+.user-msg {
+    position: relative;
+    left: 50%;
+    width: 40%;
+    text-align: right;
+    border-radius: 25px;
+    color: white;
+    background-color: #7a431d;
+    font-size: 14px;
+    line-height: 150%;
+}
+
+.ai-msg {
+    position: relative;
+    width: 40%;
+    text-align: left;
+    border-radius: 25px;
+    background-color: #edae87;
+    font-size: 14px;
+    line-height: 150%;
+}
+
+container-div {
+    width: 100%;
+    position: absolute;
+}
 
 .query-container {
   margin-top: 30%;
   height: 200px;
-  position: relative;
 }
 
 .chatbot-query {
   margin: 0;
+  width: 100%;
   position: absolute;
-  top: 50%;
   -ms-transform: translateX(50%) translateY(-50%);
   transform: translateX(50%) translateY(-50%);
+  top: 85%;
   right: 50%;
 }
 
 #query {
     width: 100%;
     resize: none;
+    border: none;
+}
+
+#query:focus {
+    outline: none;
 }
