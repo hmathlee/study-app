@@ -8,7 +8,7 @@
           rel="stylesheet">
 </head>
 
-<body onunload="unloadHandler()">
+<body>
 <!-- Header to house the navbar and profile shortcut and icon -->
 <header>
     <!-- Toggle navbar -->
@@ -26,7 +26,9 @@
     </button>
 </header>
 
-<h2>{{ username }}'s Chat</h2>
+{% if username %}
+    <h2>{{ username }}'s Chat</h2>
+{% endif %}
 
 <!-- Navigation menu -->
 <div class="navbar">
@@ -56,12 +58,12 @@
 <!-- User query box -->
 <div class="chatbot-query">
     <!-- File upload -->
-    Upload your course notes here:
     <div class="file-upload-container">
         <form onsubmit="return validateFileUpload()" method="post" enctype="multipart/form-data">
-        <input type="file" id="file-upload" name="file-upload">
-        <input type="submit">
-    </form>
+            <input type="file" id="file-upload" name="file-upload">
+            <input type="submit">
+        </form>
+        <p id="upload-status"></p>
     </div>
     <hr>
     <form action="/chatbot">

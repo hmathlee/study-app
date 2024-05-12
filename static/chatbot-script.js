@@ -1,8 +1,11 @@
 window.addEventListener("beforeunload", function(e) {
-    fetch("/logout", {method: "GET"})
-    .catch(error => {
-        alert(error);
-    });
+    // Handle user exit
+    if (document.visibilityState == "hidden") {
+        fetch("/logout", {method: "GET"})
+        .catch(error => {
+            alert(error);
+        });
+    }
 });
 
 const queryBox = document.getElementById("query");
@@ -38,7 +41,7 @@ function preventEnterDefault(e) {
         .then(response => response.json())
         .then(data => {
             const GPTListElement = document.createElement("li");
-            GPTListElement.innerHTML = "AI: " + data.result;
+            GPTListElement.innerHTML = data.result;
             GPTListElement.className = "ai-msg";
             chat.appendChild(GPTListElement);
         })
@@ -63,6 +66,8 @@ function validateFileUpload() {
         const formData = new FormData();
         formData.append("payload", file, file.name);
 
+        const uploadStatus = document.getElementById("upload-status");
+
         fetch("/upload-files", {
             method: "POST",
             body: formData
@@ -74,6 +79,8 @@ function validateFileUpload() {
             return response.json();
         })
         .then(data => {
+            uploadStatus.style.color = "black";
+            uploadStatus.innerHTML = "Uploading your files...";
             return fetch("/upload-to-google-cloud", {
                 method: "POST",
             })
@@ -85,7 +92,9 @@ function validateFileUpload() {
             return response.json()
         })
         .then(data => {
-            alert(JSON.stringify(data));
+            // Update message on-screen to indicate a successful cloud upload
+            uploadStatus.style.color = "green";
+            uploadStatus.innerHTML = "File uploaded!";
         })
         .catch(error => {
             alert(error);

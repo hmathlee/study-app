@@ -1,11 +1,11 @@
-import string
-
-from fastapi import FastAPI, Request, UploadFile, File
+from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from pydantic import BaseModel
+
+import shutil
 
 from main import *
 from api_utils import *
@@ -62,13 +62,15 @@ async def login(request: Request):
 
 
 @app.post("/verify-login")
-async def user_login(user_creds: UserCredentials):
+async def user_login(request: Request, user_creds: UserCredentials):
     email = user_creds.email
     password = user_creds.password
     response = validate_user_login(email, password)
     json_response = JSONResponse(content=response)
 
     if "user_id" in response:
+        # Replace the temp session ID with real user ID
+        remove_session_id(request)
         json_response = set_response_cookie(json_response, response["user_id"])
 
     return json_response
