@@ -1,3 +1,10 @@
+window.addEventListener("beforeunload", function(e) {
+    fetch("/logout", {method: "GET"})
+    .catch(error => {
+        alert(error);
+    });
+});
+
 const queryBox = document.getElementById("query");
 queryBox.addEventListener("keydown", preventEnterDefault);
 
@@ -87,10 +94,3 @@ function validateFileUpload() {
 
     return false;
 }
-
-window.addEventListener("beforeunload", function(e) {
-    fetch("/logout", {method: "GET"})
-    .catch(error => {
-        alert(error);
-    });
-});

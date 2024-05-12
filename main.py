@@ -13,7 +13,6 @@ from google.cloud import storage
 
 import os
 import yaml
-from pathlib import Path
 
 cfg = yaml.safe_load(open("secrets/secrets.yaml", "r"))
 
@@ -32,31 +31,18 @@ CHROMA_PERSIST = "chroma_db"
 AGENT_EXEC = "agent_executor"
 
 
-def upload_chroma_db(bucket):
-    if os.path.exists(CHROMA_PERSIST):
-        db_files = get_all_path_strs(CHROMA_PERSIST)
-        for f in db_files:
-            blob = bucket.blob(f)
-            blob.upload_from_filename(f)
-
-
-def get_all_path_strs(root):
-    res = []
-    for path, subdirs, files in os.walk(root):
-        for name in files:
-            res.append(os.path.join(path, name))
-    return res
-
-
 def remove_temp_bucket(temp_bucket):
     buckets = storage_client.list_buckets()
     buckets = [bucket.name for bucket in buckets]
     if temp_bucket in buckets:
         b = storage_client.get_bucket(temp_bucket)
+        blobs = b.list_blobs()
+        for blob in blobs:
+            blob.delete()
         b.delete()
 
 
-def upload_user_files_and_db_to_google_cloud(filepaths, user_bucket=BUCKET_NAME):
+def upload_user_files_to_google_cloud(filepaths, user_bucket=BUCKET_NAME):
     # Get blobs from bucket; create the bucket if it doesn't exist
     buckets = storage_client.list_buckets()
     buckets = [bucket.name for bucket in buckets]
@@ -68,15 +54,7 @@ def upload_user_files_and_db_to_google_cloud(filepaths, user_bucket=BUCKET_NAME)
     blobs = bucket.list_blobs()
     blob_names = [blob.name for blob in blobs]
 
-    # Blob containing the vector database
-    db_blob = bucket.get_blob(CHROMA_PERSIST)
-
-    # Check if db exists in bucket
-    if db_blob:
-        db_blob.download_to_filename(CHROMA_PERSIST)
-
-    # Embed files and add vectors to the database
-    pages = []
+    # Upload files to Google Cloud
     for fp in filepaths:
         fname = os.path.basename(fp)
 
@@ -88,53 +66,41 @@ def upload_user_files_and_db_to_google_cloud(filepaths, user_bucket=BUCKET_NAME)
         file_blob = bucket.blob(fname)
         file_blob.upload_from_filename(fp)
 
-        # Document loader (just PDFs for now)
-        loader = PyPDFLoader(fp)
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=200,
-            chunk_overlap=20
-        )
-        pages.extend(loader.load_and_split(text_splitter))
-
-        # Delete local file
-        os.remove(fp)
-
-    if len(pages) > 0:
-        # Chroma
-        vector_db = Chroma.from_documents(pages, embedding=OpenAIEmbeddings(), persist_directory=CHROMA_PERSIST)
-        vector_db.persist()
-
-        # If Chroma DB file available in memory, upload it to cloud
-        upload_chroma_db(bucket)
-
 
 async def get_agent_executor_and_respond(query, user_bucket=BUCKET_NAME):
-    if not os.path.exists(CHROMA_PERSIST):
-        os.makedirs(CHROMA_PERSIST)
-
     # If user bucket has a vector db, create a retriever. Otherwise, don't.
     buckets = storage_client.list_buckets()
     buckets = [bucket.name for bucket in buckets]
+    pages = []
+
+    # If user bucket not in cloud storage, create the bucket
     if user_bucket not in buckets:
-        bucket = storage_client.create_bucket(user_bucket)
+        storage_client.create_bucket(user_bucket)
     else:
         bucket = storage_client.get_bucket(user_bucket)
         blobs = bucket.list_blobs()
+
+        # Load files from blobs into vector store
         for blob in blobs:
-            if CHROMA_PERSIST in blob.name:
-                if "chroma.sqlite3" not in blob.name:
-                    chroma_metadir = Path(blob.name).parent.absolute()
-                    if not os.path.exists(chroma_metadir):
-                        os.makedirs(chroma_metadir)
-                b = bucket.get_blob(blob.name)
-                b.download_to_filename(blob.name)
+            blob.download_to_filename(blob.name)
 
-    if len(os.listdir(CHROMA_PERSIST)) > 0:
-        vector_db = Chroma(persist_directory=CHROMA_PERSIST, embedding_function=OpenAIEmbeddings())
-        retriever = vector_db.as_retriever(search_kwargs={'k': 3})
-    else:
+            # Document loader (just PDFs for now)
+            loader = PyPDFLoader(blob.name)
+            text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=200,
+                chunk_overlap=20
+            )
+            pages.extend(loader.load_and_split(text_splitter))
+
+            # Delete local file
+            os.remove(blob.name)
+
+    # If no files were uploaded, leave retriever as None
+    if len(pages) == 0:
         retriever = None
-
+    else:
+        vector_db = Chroma.from_documents(pages, embedding=OpenAIEmbeddings())
+        retriever = vector_db.as_retriever(search_kwargs={"k": 3})
 
     # Model
     llm = ChatOpenAI(model="gpt-3.5-turbo-1106", temperature=0.7, streaming=True)
@@ -152,6 +118,7 @@ async def get_agent_executor_and_respond(query, user_bucket=BUCKET_NAME):
     search = TavilySearchResults()
     tools = [search]
 
+    # Add retriever tool (if applicable)
     if retriever:
         retriever_tool = create_retriever_tool(retriever, "upload-file-search",
                                                """This tool should be your first resort when searching for information 
@@ -175,8 +142,8 @@ async def get_agent_executor_and_respond(query, user_bucket=BUCKET_NAME):
     agent = create_openai_functions_agent(llm=llm, prompt=prompt, tools=tools)
     agent_executor = AgentExecutor(agent=agent, tools=tools, memory=memory)
 
+    # Invoke to get response
     response = await agent_executor.ainvoke({"input": query})
-    upload_chroma_db(bucket)
 
     return response["output"]
 

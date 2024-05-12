@@ -141,11 +141,11 @@ async def send_response(request: Request, user_query: UserQuery):
     else:
         response = "", ""
     return {"result": response}
-    # return {"result": "Response goes here"}
 
 
 @app.post("/upload-files")
 async def upload_file(request: Request, payload: UploadFile = File(...)):
+    # Read in the file
     content = await payload.read()
     filename = payload.filename
 
@@ -153,11 +153,11 @@ async def upload_file(request: Request, payload: UploadFile = File(...)):
     user_id = get_user_id_from_request_cookies(request)
     user_id = get_gcs_user_id(user_id)
     temp_data_dir = TEMP_DIR + "_" + user_id
-
     fp = os.path.join(temp_data_dir, filename)
     if not os.path.exists(temp_data_dir):
         os.makedirs(temp_data_dir)
 
+    # Local file upload
     with open(fp, "wb") as f:
         f.write(content)
 
@@ -168,13 +168,20 @@ async def upload_file(request: Request, payload: UploadFile = File(...)):
 
 
 @app.post("/upload-to-google-cloud")
-async def upload_files_and_db_to_google_cloud(request: Request):
+async def upload_to_google_cloud(request: Request):
+    # Get user whose files need to be uploaded
     user_id = get_user_id_from_request_cookies(request)
     user_id = get_gcs_user_id(user_id)
 
+    # Retrieve only those files for particular user (isolation)
     temp_data_dir = TEMP_DIR + "_" + user_id
     fnames = os.listdir(temp_data_dir)
     fps = [os.path.join(temp_data_dir, fname) for fname in fnames]
-    upload_user_files_and_db_to_google_cloud(fps, user_id)
+
+    # Cloud upload
+    upload_user_files_to_google_cloud(fps, user_id)
+
+    # Remove the temp dir when done
+    shutil.rmtree(temp_data_dir)
 
     return {"status": "Uploaded files and DB to Google Cloud successfully"}

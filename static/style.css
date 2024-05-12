@@ -34,10 +34,6 @@ color: black;
     background-color: #edae87;
 }
 
-.navbar:hover + .chat-and-upload {
-    background-color: #ccc;
-}
-
 .chat-and-upload {
     transition: background-color 0.2s;
 }
@@ -45,8 +41,10 @@ color: black;
 #chat-box {
     position: absolute;
     overflow-y: scroll;
-    width: 100%;
-    height: 65%;
+    width: 95%;
+    height: 50%;
+    border-radius: 10px;
+    background: #e3e3e3;
 }
 
 #chat-box li {
@@ -77,9 +75,8 @@ color: black;
     line-height: 150%;
 }
 
-container-div {
-    width: 100%;
-    position: absolute;
+.file-upload-container {
+
 }
 
 .query-container {

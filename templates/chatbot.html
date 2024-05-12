@@ -53,17 +53,16 @@
 <!--Chat box-->
 <ul id="chat-box"></ul>
 
-<!-- File upload -->
-<div class="file-upload-container">
+<!-- User query box -->
+<div class="chatbot-query">
+    <!-- File upload -->
     Upload your course notes here:
-    <form onsubmit="return validateFileUpload()" method="post" enctype="multipart/form-data">
+    <div class="file-upload-container">
+        <form onsubmit="return validateFileUpload()" method="post" enctype="multipart/form-data">
         <input type="file" id="file-upload" name="file-upload">
         <input type="submit">
     </form>
-</div>
-
-<!-- User query box -->
-<div class="chatbot-query">
+    </div>
     <hr>
     <form action="/chatbot">
         <textarea id="query" name="query" cols="100" rows="10" placeholder="Type something..."></textarea>
