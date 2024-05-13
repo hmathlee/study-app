@@ -1,5 +1,4 @@
 window.addEventListener("beforeunload", function(e) {
-    // Handle user exit
     if (document.visibilityState == "hidden") {
         fetch("/logout", {method: "GET"})
         .catch(error => {
@@ -11,9 +10,6 @@ window.addEventListener("beforeunload", function(e) {
 const queryBox = document.getElementById("query");
 queryBox.addEventListener("keydown", preventEnterDefault);
 
-// Prevent default textarea behavior
-// Print user message to page and send message to FastAPI endpoint
-// Retrieve GPT response and output it to page
 function preventEnterDefault(e) {
     if (e.keyCode == 13) {
         e.preventDefault();
@@ -21,15 +17,17 @@ function preventEnterDefault(e) {
         const chat = document.querySelector("#chat-box");
         const userMessage = queryBox.value;
 
-        // Container is left-aligned for AI and right-aligned for user
-
-        // Text is always left-aligned
         const msgListElement = document.createElement("li");
         msgListElement.innerHTML = userMessage;
         msgListElement.className = "user-msg";
 
         chat.appendChild(msgListElement);
         queryBox.value = "";
+
+        const GPTListElement = document.createElement("li");
+        GPTListElement.innerHTML = "Thinking...";
+        GPTListElement.className = "ai-msg";
+        chat.appendChild(GPTListElement);
 
         fetch("/chatbot", {
             method: "POST",
@@ -40,10 +38,7 @@ function preventEnterDefault(e) {
         })
         .then(response => response.json())
         .then(data => {
-            const GPTListElement = document.createElement("li");
             GPTListElement.innerHTML = data.result;
-            GPTListElement.className = "ai-msg";
-            chat.appendChild(GPTListElement);
         })
         .catch((error) => {
             alert("Oops, something went wrong!");

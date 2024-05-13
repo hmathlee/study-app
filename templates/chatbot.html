@@ -26,10 +26,6 @@
     </button>
 </header>
 
-{% if username %}
-    <h2>{{ username }}'s Chat</h2>
-{% endif %}
-
 <!-- Navigation menu -->
 <div class="navbar">
     <ul>
@@ -52,6 +48,10 @@
     </ul>
 </div>
 
+{% if username %}
+    <h1>{{ username }}'s Chat</h1>
+{% endif %}
+
 <!--Chat box-->
 <ul id="chat-box"></ul>
 
@@ -64,6 +64,7 @@
             <input type="submit">
         </form>
         <p id="upload-status"></p>
+        <p id="temp"></p>
     </div>
     <hr>
     <form action="/chatbot">

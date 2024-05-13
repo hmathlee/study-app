@@ -117,16 +117,31 @@ async def logout(request: Request):
 
 @app.get("/chatbot")
 async def chatbot_page(request: Request):
-    username = get_user_credential_from_request_cookies(request, "username")
+    # Remove any existing temporary bucket/session
+    user_id = get_user_id_from_request_cookies(request)
+    if user_id:
+        user_id = get_gcs_user_id(user_id)
+        if "temp" in user_id:
+            remove_temp_bucket(user_id)
+            remove_session_id(request)
+            username = None
+        else:
+            username = get_user_credential_from_request_cookies(request, "username")
+    else:
+        username = None
+
+    # Preserve current state if user is logged in
     if username:
         response = templates.TemplateResponse(
             request=request, name="chatbot.html", context={"username": username}
         )
+
+    # If not logged in, generate a fresh start
     else:
-        temp_id = "temp-" + ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
         response = templates.TemplateResponse(
             request=request, name="chatbot.html", context={}
         )
+        temp_id = "temp-" + ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
         response = set_response_cookie(response, temp_id)
 
     return response

@@ -3,6 +3,83 @@ font-family: 'Raleway', 'Arial', sans-serif;
 color: black;
 }
 
+/* Color scheme */
+:root {
+}
+
+/* Animations */
+@keyframes slide-left {
+    from {
+        transform: translateX(70%);
+    }
+    to {
+        transform: translateX(0%);
+    }
+}
+
+@keyframes slide-up {
+    from {
+        transform: translateY(70%);
+    }
+    to {
+        transform: translateY(0%);
+    }
+}
+
+@keyframes header-color-change {
+    from {
+        color: white;
+    }
+    to {
+        color: black;
+    }
+}
+
+@keyframes light-gray-background-change {
+    from {
+        background: white;
+    }
+    to {
+        background: #e3e3e3;
+    }
+}
+
+/* ---------- */
+
+button {
+    padding: 10px;
+    background: white;
+    border-radius: 10px;
+    transition: background 0.1s;
+}
+
+button:hover {
+    background: #db854f;
+    cursor: pointer;
+}
+
+h1 {
+    animation: slide-left 1s cubic-bezier(0, 0, 0.1, 1.0), header-color-change 1s linear;
+}
+
+#chat-box {
+    animation: slide-up 1s cubic-bezier(0, 0, 0.1, 1.0), light-gray-background-change 1s linear;
+}
+
+.chatbot-query {
+    animation: slide-up 1s cubic-bezier(0, 0, 0.1, 1.0);
+}
+
+.reg-div {
+    animation-duration: 1s;
+    animation-name: slide-in;
+    animation-timing-function: cubic-bezier(0, 0, 0.1, 1.0);
+}
+
+.user-info-panel {
+    animation: slide-up 1s cubic-bezier(0, 0, 0.1, 1.0), header-color-change 1s linear;
+}
+
 .profile-icon {
     float: right;
 }
@@ -32,10 +109,6 @@ color: black;
 
 .navbar li a:hover {
     background-color: #edae87;
-}
-
-.chat-and-upload {
-    transition: background-color 0.2s;
 }
 
 #chat-box {
@@ -70,13 +143,10 @@ color: black;
     width: 40%;
     text-align: left;
     border-radius: 25px;
-    background-color: #edae87;
+    color: white;
+    background-color: #878787;
     font-size: 14px;
     line-height: 150%;
-}
-
-.file-upload-container {
-
 }
 
 .query-container {
@@ -102,4 +172,15 @@ color: black;
 
 #query:focus {
     outline: none;
+}
+
+/* Profile */
+.user-info-panel {
+    background: #e3e3e3;
+    border-radius: 10px;
+    padding: 5px;
+}
+
+.user-study-option {
+    background: #db854f;
 }
