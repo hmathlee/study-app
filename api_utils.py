@@ -1,14 +1,16 @@
 from fastapi import Request
-
+from google.cloud import storage
 import MySQLdb as mdb
-import yaml
-import random
-import string
+
 import os
+import yaml
 import base64
 
-
+# Config
 cfg = yaml.safe_load(open("secrets/secrets.yaml", "r"))
+
+# GCS
+storage_client = storage.Client.from_service_account_json("secrets/profound-saga-420500-b3f6a7d4835f.json")
 
 
 def get_cursor(return_connection=False):
@@ -19,113 +21,67 @@ def get_cursor(return_connection=False):
     return cursor
 
 
-def get_column_value_from_cursor(cursor, colname):
-    query_result = cursor.fetchone()
-    if query_result is None:
-        return None
-    col_idx = 0
-    for desc in cursor.description:
-        if desc[0] == colname:
-            break
-        else:
-            col_idx += 1
-    return query_result[col_idx]
-
-
-def mysql_register_user(email, username, password):
-    cursor, conn = get_cursor(return_connection=True)
-
-    # Ensure that email is not already in database
-    cursor.execute("SELECT * FROM user_credentials WHERE email=%s", (email, ))
-    email_exist = cursor.fetchone()
-    if email_exist:
-        return {"status": "That email is already taken!"}
-
-    # If full set of user credentials, insert
-    if username != "" and password != "":
-        cursor.execute("INSERT INTO user_credentials (email, username, password) VALUES (%s, %s, %s)",
-                       (email, username, password))
-
-    conn.commit()
-    conn.close()
-    return {"status": "OK"}
-
-
-def validate_user_login(email, password):
-    cursor = get_cursor()
-    cursor.execute("SELECT * FROM user_credentials WHERE email=%s AND password=%s", (email, password))
-    user_id = get_column_value_from_cursor(cursor, "id")
-    if user_id:
-        return {
-            "status": "OK",
-            "user_id": user_id
-        }
-    return {"status": "Invalid email or password"}
-
-
-def insert_session_id(session_id, user_id):
-    cursor, conn = get_cursor(return_connection=True)
-    cursor.execute("SELECT * FROM user_sessions where session_id=%s", (session_id, ))
-    user_id_check = get_column_value_from_cursor(cursor, "user_id")
-    if user_id_check is None:
-        cursor.execute("INSERT INTO user_sessions (session_id, user_id) VALUES (%s, %s)", (session_id, user_id))
-
-    conn.commit()
-    conn.close()
-
-
 def set_response_cookie(response, user_id):
     # Generate session ID
     session_id_bytes = os.urandom(16)
     session_id = base64.urlsafe_b64encode(session_id_bytes).decode("utf-8")
     response.set_cookie("session_id", session_id)
-    insert_session_id(session_id, user_id)
+
+    # Insert session ID. In the (small) chance that a duplicate session ID is generated, regenerate until unique
+    duplicate_session_id = True
+    while duplicate_session_id:
+        cursor, conn = get_cursor(return_connection=True)
+        cursor.execute("SELECT * FROM user_sessions where session_id=%s", (session_id, ))
+
+        # If no results are returned for the session ID, create a new session
+        q = cursor.fetchone()
+        if q is None:
+            cursor.execute("INSERT INTO user_sessions (session_id, user_id) VALUES (%s, %s)", (session_id, user_id))
+            conn.commit()
+            conn.close()
+            duplicate_session_id = False
 
     return response
 
 
-def get_user_id_from_request_cookies(request: Request):
-    if "session_id" in request.cookies:
-        session_id = request.cookies.get("session_id")
-        cursor = get_cursor()
-        cursor.execute("SELECT * FROM user_sessions WHERE session_id=%s", (session_id,))
-        return get_column_value_from_cursor(cursor, "user_id")
-    else:
-        return None
-
-
-def get_gcs_user_id(user_id):
-    if user_id:
-        user_id = "study-app-user-" + user_id
-    else:
-        user_id = "study-app-" + user_id
-    return user_id
-
-
 def get_user_credential_from_request_cookies(request: Request, attr: str):
-    user_id = get_user_id_from_request_cookies(request)
-    if user_id:
-        cursor = get_cursor()
-        cursor.execute("SELECT * FROM user_credentials where id=%s", (user_id, ))
-        return get_column_value_from_cursor(cursor, attr)
-    else:
+    # Get user ID from request cookies
+    session_id = request.cookies.get("session_id")
+    cursor = get_cursor()
+    cursor.execute("SELECT user_id FROM user_sessions WHERE session_id=%s", (session_id,))
+    user_id = cursor.fetchone()
+
+    if user_id is None:
         return None
+
+    # For temporary sessions, no credentials exist, so return None
+    if "temp" in user_id:
+        return None
+
+    # Get attribute from row keyed by user ID
+    cursor.execute("SELECT * FROM user_credentials where id=%s", (user_id, ))
+    q = cursor.fetchone()
+    names = [desc[0] for desc in cursor.description]
+    return str(q[names.index(attr)])
 
 
 def remove_session_id(request: Request):
-    # Check if request has an associated session ID
-    if "session_id" in request.cookies:
-        session_id = request.cookies.get("session_id")
+    session_id = request.cookies.get("session_id")
+    cursor, conn = get_cursor(return_connection=True)
+    cursor.execute("DELETE FROM user_sessions WHERE session_id=%s", (session_id, ))
+    conn.commit()
+    conn.close()
 
-        # Check that the session ID actually exists
-        cursor, conn = get_cursor(return_connection=True)
-        cursor.execute("SELECT session_id FROM user_sessions where session_id=%s", (session_id, ))
-        id_check = get_column_value_from_cursor(cursor, "session_id")
-        if id_check:
-            cursor.execute("DELETE FROM user_sessions WHERE session_id=%s", (session_id, ))
 
-        conn.commit()
-        conn.close()
+def remove_temp_bucket(temp_bucket):
+    buckets = storage_client.list_buckets()
+    buckets = [bucket.name for bucket in buckets]
+    if temp_bucket in buckets:
+        b = storage_client.get_bucket(temp_bucket)
+        blobs = b.list_blobs()
+        for blob in blobs:
+            blob.delete()
+        b.delete()
 
 
 if __name__ == "__main__":
