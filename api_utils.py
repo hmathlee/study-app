@@ -53,6 +53,8 @@ def get_user_credential_from_request_cookies(request: Request, attr: str):
 
     if user_id is None:
         return None
+    else:
+        user_id = user_id[0]
 
     # For temporary sessions, no credentials exist, so return None
     if "temp" in user_id:

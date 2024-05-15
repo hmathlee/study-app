@@ -175,6 +175,16 @@ h1 {
 }
 
 /* Profile */
+#username-field {
+    border: none;
+    background-color: #e3e3e3;
+    font-size: 16px;
+}
+
+#username-field::placeholder {
+    color: black;
+}
+
 .user-info-panel {
     background: #e3e3e3;
     border-radius: 10px;

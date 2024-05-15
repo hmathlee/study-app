@@ -51,22 +51,26 @@
 
 <!-- User information panel -->
 <div class="user-info-panel">
-    <h2>Username</h2>
+    <form>
+        <h2>Username</h2>
 
-    <p>{{ username }}</p>
+        <input type="text" name="username-field" readonly="readonly" placeholder="{{ username }}">
+        <button name="username-field">Update</button>
 
-    <h2>Email</h2>
-    <p>{{ email }}</p>
+        <h2>Email</h2>
+        <input type="text" name="email-field" readonly="readonly" placeholder="{{ email }}">
+        <button name="email-field">Update</button>
 
-    <h2>Major/Field of Study</h2>
-    <select>
-        <option value="Mathematics" class="user-study-option">Mathematics</option>
-        <option value="Not Mathematics" class="user-study-option">Not Mathematics</option>
-    </select>
-    <p></p>
+        <h2>Major/Field of Study</h2>
+        <select>
+            <option value="Mathematics" class="user-study-option">Mathematics</option>
+            <option value="Not Mathematics" class="user-study-option">Not Mathematics</option>
+        </select>
+        <p></p>
 
-    <h2>Coins</h2>
-    <p>{{ coins }}</p>
+        <h2>Coins</h2>
+        <p id="coins-field">{{ coins }}</p>
+    </form>
 
     <a href="/user/{{ username }}/username">
         <button>Update Profile</button>
@@ -78,3 +82,43 @@
 
 <!-- Navbar menu -->
 <script src="../static/navbar.js" defer></script>
+
+<script>
+    const usernameButton = document.getElementsByName("username-field")[1];
+    const emailButton = document.getElementsByName("email-field")[1];
+
+    usernameButton.addEventListener("click", updateUserDetail);
+    emailButton.addEventListener("click", updateUserDetail);
+
+    function updateUserDetail(e) {
+        e.preventDefault();
+        const userDetail = document.getElementsByName(this.name)[0];
+        userDetail.readOnly = false;
+        userDetail.addEventListener("keydown", sendDetailUpdate);
+        this.innerHTML = "OK";
+    }
+
+    function sendDetailUpdate(e) {
+        if (e.keyCode == 13) {
+            e.preventDefault();
+            var reqBody = {}
+            reqBody.username = (this.name == "username-field") ? this.value : "";
+            reqBody.email = (this.name == "email-field") ? this.value : "";
+            reqBody.password = "";
+            fetch("/user/{{ username }}/update-user", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(reqBody)
+            })
+            .catch(error => {
+                alert(error);
+            });
+
+            const button = document.getElementsByName(this.name)[1];
+            button.innerHTML = "Update";
+            this.readOnly = true;
+        }
+    }
+</script>

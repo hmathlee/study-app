@@ -50,10 +50,6 @@ class UserCredentials(BaseModel):
     password: str = ""
 
 
-class UserUpdate(BaseModel):
-    detail: str
-
-
 # Define endpoints
 @app.get("/")
 async def index(request: Request):
@@ -149,20 +145,44 @@ async def user_profile(request: Request):
         return login(request)
 
 
+@app.post("/user/{username}/update-user")
+async def update_user(request: Request, user_creds: UserCredentials):
+    # Get the ID of user to update
+    user_id = get_user_credential_from_request_cookies(request, "id")
+
+    # Collect credentials
+    email = user_creds.email
+    username = user_creds.username
+    password = user_creds.password
+
+    # Collect current credentials for user in database
+    cursor, conn = get_cursor(return_connection=True)
+    cursor.execute("SELECT * FROM user_credentials where id=%s", (user_id, ))
+    query_result = cursor.fetchone()
+    curr_creds = dict([(desc[0], q) for desc, q in zip(cursor.description, query_result)])
+
+    # Update user row
+    cursor, conn = get_cursor(return_connection=True)
+    cursor.execute("UPDATE user_credentials SET email=%s, username=%s, password=%s where id=%s",
+                   (email if email != "" else curr_creds["email"],
+                    username if username != "" else curr_creds["username"],
+                    password if password != "" else curr_creds["password"],
+                    user_id))
+    conn.commit()
+    conn.close()
+
+
 @app.get("/logout")
 async def logout(request: Request):
     user_id = get_user_credential_from_request_cookies(request, "id")
     if "temp" in user_id:
-        remove_temp_bucket(user_id)
+        remove_temp_bucket("study-app-user-" + user_id)
     remove_session_id(request)
-    return templates.TemplateResponse(
-        request=request, name="chatbot.html", context={}
-    )
+    return chatbot_page(request)
 
 
 @app.get("/chatbot")
 async def chatbot_page(request: Request):
-    # Remove any existing temporary bucket/session
     user_id = get_user_credential_from_request_cookies(request, "id")
 
     # Initial chatbot page load
@@ -171,7 +191,7 @@ async def chatbot_page(request: Request):
 
     # Handles chatbot page reload when user is not logged in
     elif "temp" in user_id:
-        remove_temp_bucket(user_id)
+        remove_temp_bucket("study-app-user-" + user_id)
         remove_session_id(request)
         username = None
 
@@ -200,6 +220,7 @@ async def chatbot_page(request: Request):
 async def send_response(request: Request, user_query: UserQuery):
     query = user_query.query
     user_id = get_user_credential_from_request_cookies(request, "id")
+    user_id = "study-app-user-" + user_id
 
     # If user has a vector db in GCS, create a retriever. Otherwise, don't.
     buckets = storage_client.list_buckets()
@@ -289,6 +310,7 @@ async def upload_file(request: Request, payload: UploadFile = File(...)):
 
     # Set up a temporary directory for user (temp if not logged in)
     user_id = get_user_credential_from_request_cookies(request, "id")
+    user_id = "study-app-user-" + user_id
     temp_data_dir = TEMP_DIR + "_" + user_id
     fp = os.path.join(temp_data_dir, filename)
     if not os.path.exists(temp_data_dir):
@@ -308,6 +330,7 @@ async def upload_file(request: Request, payload: UploadFile = File(...)):
 async def upload_to_google_cloud(request: Request):
     # Get user whose files need to be uploaded
     user_id = get_user_credential_from_request_cookies(request, "id")
+    user_id = "study-app-user-" + user_id
 
     # Get blobs from user GCS bucket; create if it doesn't exist
     buckets = storage_client.list_buckets()
