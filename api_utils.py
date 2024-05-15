@@ -56,13 +56,17 @@ def get_user_credential_from_request_cookies(request: Request, attr: str):
     else:
         user_id = user_id[0]
 
-    # For temporary sessions, no credentials exist, so return None
-    if "temp" in user_id:
-        return None
-
     # Get attribute from row keyed by user ID
     cursor.execute("SELECT * FROM user_credentials where id=%s", (user_id, ))
     q = cursor.fetchone()
+
+    if q is None:
+        # Special case: if we're just looking for ID, return the ID
+        if attr == "id":
+            return user_id
+        else:
+            return None
+
     names = [desc[0] for desc in cursor.description]
     return str(q[names.index(attr)])
 

@@ -26,7 +26,7 @@ function validateLogin(event) {
         .then(data => {
             if (data.status == "OK") {
                 loginErrorMsg.innerHTML = "";
-                window.location.href = "/chatbot";
+                fetch("/chatbot", {method: "GET"})
             }
             else {
                 loginErrorMsg.innerHTML = data.status;

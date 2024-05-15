@@ -178,38 +178,34 @@ async def logout(request: Request):
     if "temp" in user_id:
         remove_temp_bucket("study-app-user-" + user_id)
     remove_session_id(request)
-    return chatbot_page(request)
+    return await reset_session(request)
+
+
+@app.get("/reset-session")
+async def reset_session(request: Request):
+    user_id = get_user_credential_from_request_cookies(request, "id")
+    if user_id and "temp" in user_id:
+        remove_temp_bucket("study-app-user-" + user_id)
+    remove_session_id(request)
+    return {"status": "OK"}
 
 
 @app.get("/chatbot")
 async def chatbot_page(request: Request):
     user_id = get_user_credential_from_request_cookies(request, "id")
+    context = {}
 
-    # Initial chatbot page load
-    if user_id is None:
-        username = None
-
-    # Handles chatbot page reload when user is not logged in
-    elif "temp" in user_id:
-        remove_temp_bucket("study-app-user-" + user_id)
-        remove_session_id(request)
-        username = None
-
-    # Reload when user is logged in
-    else:
+    # For logged-in users, add username to context
+    if user_id and "temp" not in user_id:
         username = get_user_credential_from_request_cookies(request, "username")
+        context["username"] = username
 
-    # Preserve current state if user is logged in
-    if username:
-        response = templates.TemplateResponse(
-            request=request, name="chatbot.html", context={"username": username}
-        )
+    response = templates.TemplateResponse(
+        request=request, name="chatbot.html", context=context
+    )
 
-    # If not logged in, fresh start
-    else:
-        response = templates.TemplateResponse(
-            request=request, name="chatbot.html", context={}
-        )
+    # If null user ID, no session currently exists
+    if user_id is None:
         temp_id = "temp-" + ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
         response = set_response_cookie(response, temp_id)
 

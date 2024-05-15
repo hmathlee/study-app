@@ -84,20 +84,19 @@ h1 {
     float: right;
 }
 
-.navbar ul {
+.navbar {
+    width: 100%;
     position: absolute;
     list-style-type: none;
     margin: 0;
     padding: 0;
     overflow: hidden;
     background-color: #db854f;
-    width: 0px;
     transition: width 0.2s;
-    z-index: 1;
 }
 
-.navbar ul li {
-    display: block;
+.navbar li {
+    float: left;
 }
 
 .navbar li a {

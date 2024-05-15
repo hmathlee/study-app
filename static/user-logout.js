@@ -5,5 +5,10 @@ function userLogout() {
     .catch(error => {
         alert(error);
     })
-    window.location.href = "/chatbot";
+    fetch("/chatbot", {
+        method: "GET"
+    })
+    .catch(error => {
+        alert(error);
+    })
 }
