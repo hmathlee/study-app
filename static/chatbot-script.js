@@ -57,15 +57,44 @@ function sendQuery(userQuery) {
     })
     .then(response => response.json())
     .then(data => {
-        const GPTResponse = data.result;
+        // Parse response for links
+        var innerHTMLStr = "";
+        var linkName = "";
+        var url = "";
+        var readLinkName = false
+        var readUrl = false;
 
-        // Parse GPT response
-        const words = GPTResponse.split(/[ /]);
-        for (const word of words) {
-
+        for (const c of data.result) {
+            if (c == '[') {
+                readLinkName = true;
+            }
+            else if (c == ']') {
+                readLinkName = false;
+            }
+            else if (c == '(') {
+                readUrl = true;
+            }
+            else if (c == ')') {
+                readUrl = false;
+                innerHTMLStr += '<a href=' + '"' + url + '"' + '>';
+                innerHTMLStr += linkName;
+                innerHTMLStr += '</a>';
+                linkName = "";
+                url = "";
+            }
+            else if (readLinkName) {
+                linkName += c;
+            }
+            else if (readUrl) {
+                url += c;
+            }
+            else {
+                innerHTMLStr += c;
+            }
         }
 
-        GPTListElement.innerHTML = GPTResponse;
+        // Display GPT response in chat window
+        GPTListElement.innerHTML = innerHTMLStr;
         for (let i = 0; i < followupButtons.length; i++) {
             followupButtons[i].innerHTML = data.followups[i];
         }

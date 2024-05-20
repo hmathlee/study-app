@@ -204,7 +204,7 @@ async def chatbot_page(request: Request):
 
 
 @app.post("/chatbot")
-async def send_response(request: Request, user_query: UserQuery):
+async def send_response(request: Request, user_query: UserQuery, num_followups=3):
     query = user_query.query
     user_id = get_user_credential_from_request_cookies(request, "id")
     user_id = "study-app-user-" + user_id
@@ -288,23 +288,24 @@ async def send_response(request: Request, user_query: UserQuery):
 
     # Generate suggested follow-up questions
     suggested_followup_prompt = ChatPromptTemplate.from_messages([
-        ("system", """Based on the given input, suggest three questions that the user should ask you."""),
+        ("system", """Based on the given input, suggest a follow-up question that the user should ask you. Limit your
+         response to 20 words or less."""),
         ("human", "{input}"),
         MessagesPlaceholder(variable_name="agent_scratchpad")
     ])
 
     suggested_followup_agent = create_openai_functions_agent(llm=llm, prompt=suggested_followup_prompt, tools=tools)
     suggested_followup_agent_executor = AgentExecutor(agent=suggested_followup_agent, tools=tools)
-    suggested_followup_questions = await suggested_followup_agent_executor.ainvoke({"input": response["output"]})
 
-    # Parse suggested followup questions response
+    async def async_followup_generator():
+        for i in range(num_followups):
+            suggested_followup_question = await suggested_followup_agent_executor.ainvoke({"input": response["output"]})
+            yield suggested_followup_question["output"]
+
     followup_questions_list = []
-    question = ""
-    for c in suggested_followup_questions["output"]:
-        question += c
-        if c == '?':
-            followup_questions_list.append(question.lstrip())
-            question = ""
+    followups = async_followup_generator()
+    async for question in followups:
+        followup_questions_list.append(question)
 
     return {
         "result": response["output"],
