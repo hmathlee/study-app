@@ -8,43 +8,72 @@ window.addEventListener("beforeunload", function(e) {
 });
 
 const queryBox = document.getElementById("query");
-queryBox.addEventListener("keydown", preventEnterDefault);
+queryBox.addEventListener("keydown", handleQueryEnter);
 
-function preventEnterDefault(e) {
+const followupButtonContainer = document.getElementsByClassName("follow-up-queries-container")[0];
+const followupButtons = followupButtonContainer.children;
+
+for (let i = 0; i < followupButtons.length; i++) {
+    followupButtons[i].addEventListener("click", handleFollowupButtonClick);
+}
+
+function handleQueryEnter(e) {
     if (e.keyCode == 13) {
         e.preventDefault();
-
-        const chat = document.querySelector("#chat-box");
-        const userMessage = queryBox.value;
-
-        const msgListElement = document.createElement("li");
-        msgListElement.innerHTML = userMessage;
-        msgListElement.className = "user-msg";
-
-        chat.appendChild(msgListElement);
-        queryBox.value = "";
-
-        const GPTListElement = document.createElement("li");
-        GPTListElement.innerHTML = "Thinking...";
-        GPTListElement.className = "ai-msg";
-        chat.appendChild(GPTListElement);
-
-        fetch("/chatbot", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({query: userMessage})
-        })
-        .then(response => response.json())
-        .then(data => {
-            GPTListElement.innerHTML = data.result;
-        })
-        .catch((error) => {
-            alert("Oops, something went wrong!");
-        })
-        .finally(() => chat.scrollTo(0, chat.scrollHeight));
+        const userQuery = queryBox.value;
+        sendQuery(userQuery);
     }
+}
+
+function handleFollowupButtonClick() {
+    if (this.tagName == "BUTTON") {
+        const userQuery = this.innerHTML;
+        sendQuery(userQuery);
+    }
+}
+
+
+function sendQuery(userQuery) {
+    const msgListElement = document.createElement("li");
+    msgListElement.innerHTML = userQuery;
+    msgListElement.className = "user-msg";
+
+    const chat = document.querySelector("#chat-box");
+    chat.appendChild(msgListElement);
+    queryBox.value = "";
+
+    const GPTListElement = document.createElement("li");
+    GPTListElement.innerHTML = "Thinking...";
+    GPTListElement.className = "ai-msg";
+    chat.appendChild(GPTListElement);
+    chat.scrollTo(0, chat.scrollHeight);
+
+    fetch("/chatbot", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({query: userQuery})
+    })
+    .then(response => response.json())
+    .then(data => {
+        const GPTResponse = data.result;
+
+        // Parse GPT response
+        const words = GPTResponse.split(/[ /]);
+        for (const word of words) {
+
+        }
+
+        GPTListElement.innerHTML = GPTResponse;
+        for (let i = 0; i < followupButtons.length; i++) {
+            followupButtons[i].innerHTML = data.followups[i];
+        }
+    })
+    .catch((error) => {
+        alert("Oops, something went wrong!");
+    })
+    .finally(() => chat.scrollTo(0, chat.scrollHeight));
 }
 
 

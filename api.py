@@ -142,7 +142,7 @@ async def user_profile(request: Request):
 
     # Temp session; prompt user to login in order to access profile
     else:
-        return login(request)
+        return await login(request)
 
 
 @app.post("/user/{username}/update-user")
@@ -174,15 +174,6 @@ async def update_user(request: Request, user_creds: UserCredentials):
 
 @app.get("/logout")
 async def logout(request: Request):
-    user_id = get_user_credential_from_request_cookies(request, "id")
-    if "temp" in user_id:
-        remove_temp_bucket("study-app-user-" + user_id)
-    remove_session_id(request)
-    return await reset_session(request)
-
-
-@app.get("/reset-session")
-async def reset_session(request: Request):
     user_id = get_user_credential_from_request_cookies(request, "id")
     if user_id and "temp" in user_id:
         remove_temp_bucket("study-app-user-" + user_id)
@@ -253,7 +244,7 @@ async def send_response(request: Request, user_query: UserQuery):
         retriever = vector_db.as_retriever(search_kwargs={"k": 3})
 
     # Model
-    llm = ChatOpenAI(model="gpt-3.5-turbo-1106", temperature=0.7, streaming=True)
+    llm = ChatOpenAI(model="gpt-3.5-turbo-1106", temperature=0.3, streaming=True)
 
     # Prompt
     prompt = ChatPromptTemplate.from_messages([
@@ -295,7 +286,30 @@ async def send_response(request: Request, user_query: UserQuery):
     # Invoke to get response
     response = await agent_executor.ainvoke({"input": query})
 
-    return {"result": response["output"]}
+    # Generate suggested follow-up questions
+    suggested_followup_prompt = ChatPromptTemplate.from_messages([
+        ("system", """Based on the given input, suggest three questions that the user should ask you."""),
+        ("human", "{input}"),
+        MessagesPlaceholder(variable_name="agent_scratchpad")
+    ])
+
+    suggested_followup_agent = create_openai_functions_agent(llm=llm, prompt=suggested_followup_prompt, tools=tools)
+    suggested_followup_agent_executor = AgentExecutor(agent=suggested_followup_agent, tools=tools)
+    suggested_followup_questions = await suggested_followup_agent_executor.ainvoke({"input": response["output"]})
+
+    # Parse suggested followup questions response
+    followup_questions_list = []
+    question = ""
+    for c in suggested_followup_questions["output"]:
+        question += c
+        if c == '?':
+            followup_questions_list.append(question.lstrip())
+            question = ""
+
+    return {
+        "result": response["output"],
+        "followups": followup_questions_list
+    }
 
 
 @app.post("/upload-files")

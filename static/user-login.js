@@ -1,9 +1,8 @@
-const loginEmail = document.getElementById("login-email");
-const loginPassword = document.getElementById("login-password");
-const loginErrorMsg = document.getElementById("login-err");
-const loginForm = document.getElementById("login-form");
-
 function validateLogin(event) {
+    const loginEmail = document.getElementById("login-email").value;
+    const loginPassword = document.getElementById("login-password").value;
+    const loginErrorMsg = document.getElementById("login-err");
+
     if (loginEmail.length == 0) {
         loginErrorMsg.innerHTML = "Please provide your email.";
     }
@@ -17,16 +16,17 @@ function validateLogin(event) {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                email: loginEmail.value,
+                email: loginEmail,
                 username: "",
-                password: loginPassword.value
+                password: loginPassword
             })
         })
         .then(response => response.json())
         .then(data => {
             if (data.status == "OK") {
                 loginErrorMsg.innerHTML = "";
-                fetch("/chatbot", {method: "GET"})
+                fetch("/chatbot", {method: "GET"});
+                window.location.href = "/chatbot";
             }
             else {
                 loginErrorMsg.innerHTML = data.status;

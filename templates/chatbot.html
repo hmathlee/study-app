@@ -9,23 +9,6 @@
 </head>
 
 <body>
-<!-- Header to house the navbar and profile shortcut and icon -->
-<!--<header>-->
-<!--    &lt;!&ndash; Toggle navbar &ndash;&gt;-->
-<!--    <button class="navbar-button" onclick="moveNavbar()">-->
-<!--        <img src="../images/nav_icon.jpg">-->
-<!--    </button>-->
-
-<!--    &lt;!&ndash;  Shortcut to profile page  &ndash;&gt;-->
-<!--    <button class="profile-icon">-->
-<!--        {% if username %}-->
-<!--            <a href="/user/{{ username }}" style="text-decoration: none">Profile</a>-->
-<!--        {% else %}-->
-<!--            <a href="/login" style="text-decoration: none">Profile</a>-->
-<!--        {% endif %}-->
-<!--    </button>-->
-<!--</header>-->
-
 <!-- Navigation menu -->
 <ul class="navbar">
     <li><a href="/chatbot">Chatbot</a></li>
@@ -48,6 +31,8 @@
 
 {% if username %}
     <h1>{{ username }}'s Chat</h1>
+{% else %}
+    <h1>Chat</h1>
 {% endif %}
 
 <!--Chat box-->
@@ -55,6 +40,13 @@
 
 <!-- User query box -->
 <div class="chatbot-query">
+    <!-- Follow-up questions -->
+    <div class="follow-up-queries-container">
+        <button onclick="handleFollowupButtonClick()"></button>
+        <button onclick="handleFollowupButtonClick()"></button>
+        <button onclick="handleFollowupButtonClick()"></button>
+    </div>
+
     <!-- File upload -->
     <div class="file-upload-container">
         <form onsubmit="return validateFileUpload()" method="post" enctype="multipart/form-data">
@@ -62,8 +54,9 @@
             <input type="submit">
         </form>
         <p id="upload-status"></p>
-        <p id="temp"></p>
     </div>
+
+    <!-- Query box -->
     <hr>
     <form action="/chatbot">
         <textarea id="query" name="query" cols="100" rows="10" placeholder="Type something..."></textarea>
@@ -73,10 +66,7 @@
 </body>
 </html>
 
-<script src="static/chatbot-script.js" defer></script>
+<script src="static/chatbot-script.js?newversion" defer></script>
 {% if username %}
     <script src="static/user-logout.js" defer></script>
 {% endif %}
-
-<!-- Navbar menu -->
-<script src="static/navbar.js" defer></script>

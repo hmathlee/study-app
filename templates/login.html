@@ -8,17 +8,10 @@
           rel="stylesheet">
 </head>
 <body>
-<!-- Toggle navbar -->
-<button class="navbar-button" onclick="moveNavbar()">
-    <img src="../images/nav_icon.jpg">
-</button>
-
-<div class="navbar">
-    <ul class="navbar">
-        <li><a href="/chatbot">Chatbot</a></li>
-        <li><a href="/register">Register</a></li>
-    </ul>
-</div>
+<ul class="navbar">
+    <li><a href="/chatbot">Chatbot</a></li>
+    <li><a href="/register">Register</a></li>
+</ul>
 
 <form onsubmit="return validateLogin()" id="login-form">
     <br>
@@ -34,6 +27,3 @@
 </html>
 
 <script src="static/user-login.js" defer></script>
-
-<!-- Navbar menu -->
-<script src="static/navbar.js" defer></script>
